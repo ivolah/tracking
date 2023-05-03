@@ -19,13 +19,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.criteria.Predicate;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,52 +98,38 @@ public class CpmBusiness {
         return CpmDTO.from(repository.save(mappedEntity));
     }
 
-    public Page<CpmDTO> getUnread() {
-        Pageable pageable = PageRequest.of(0, 1000, Sort.by(Sort.Order.desc("id")));
-        Filter request = new Filter();
-        request.setRead(false);
-        Page<Cpm> page = repository.findAll(getSpecification(request), pageable);
-        log.trace("UNREAD {}", page.getTotalElements());
-        return page.map(CpmDTO::from);
-    }
-
     public void setRead(long id) {
         Cpm cpm = repository.findById(id).get();
         cpm.setRead(true);
         repository.save(cpm);
     }
 
-    public Page<CpmDTO> getUnreadLastHour() {
-        Pageable pageable = PageRequest.of(0, 1000, Sort.by(Sort.Order.desc("id")));
-        Filter request = new Filter();
-        request.setRead(false);
-        LocalDateTime now = LocalDateTime.now();
-        request.setDateFrom(now.minusHours(1).toInstant(ZoneOffset.of("+02:00")));
-        request.setDateTo(now.toInstant(ZoneOffset.of("+02:00")));
-        Page<Cpm> page = repository.findAll(getSpecification(request), pageable);
-        log.trace("UNREAD {}", page.getTotalElements());
-        return page.map(CpmDTO::from);
-    }
 
     /**
      * ============================================================================================================
      **/
     private Specification<Cpm> getSpecification(Filter request) {
         return (root, query, cb) -> {
-            Predicate completePredicate = null;
+            Predicate completePredicate;
             List<Predicate> predicates = new ArrayList<>();
 
             if (request.getId() != null) {
                 predicates.add(cb.equal(root.get("id"), request.getId()));
             }
+            if (request.getRefferal() != null) {
+                predicates.add(cb.equal(root.get("refferal"), request.getRefferal()));
+            }
             if (request.getRead() != null) {
                 predicates.add(cb.equal(root.get("read"), request.getRead()));
             }
+            if (request.getIp() != null) {
+                predicates.add(cb.equal(root.get("ip"), request.getIp()));
+            }
             if (request.getDateFrom() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("date"), LocalDateTime.ofInstant(request.getDateFrom(), ZoneOffset.UTC)));
+                predicates.add(cb.greaterThanOrEqualTo(root.get("date"), request.getDateFrom().atStartOfDay()));
             }
             if (request.getDateTo() != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("date"), LocalDateTime.ofInstant(request.getDateTo().plus(1, ChronoUnit.DAYS), ZoneOffset.UTC)));
+                predicates.add(cb.lessThanOrEqualTo(root.get("date"), request.getDateTo().plus(1, ChronoUnit.DAYS).atStartOfDay()));
             }
 
             completePredicate = cb.and(predicates.toArray(new Predicate[0]));
@@ -181,8 +167,11 @@ public class CpmBusiness {
 
         private Boolean read;
 
-        private Instant dateFrom;
-        private Instant dateTo;
+        @DateTimeFormat(pattern = "yyyy-MM-dd")
+        private LocalDate dateFrom;
+        @DateTimeFormat(pattern = "yyyy-MM-dd")
+        private LocalDate dateTo;
     }
 
 }
+

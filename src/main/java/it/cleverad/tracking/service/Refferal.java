@@ -2,18 +2,15 @@ package it.cleverad.tracking.service;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class Refferal {
-
     private Long mediaId;
     private Long campaignId;
     private Long affiliateId;
     private Long channelId;
-
-    @Override
-    public String toString() {
-        return "Refferal{" + "mediaId=" + mediaId + ", campaignId=" + campaignId + ", affiliateId=" + affiliateId + ", channelId=" + channelId + '}';
-    }
+    private Long targetId;
 }
