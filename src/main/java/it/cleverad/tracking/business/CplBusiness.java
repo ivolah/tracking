@@ -33,10 +33,8 @@ import java.util.List;
 @Component
 @Transactional
 public class CplBusiness {
-
     @Autowired
     private CplRepository repository;
-
     @Autowired
     private Mapper mapper;
 
@@ -46,7 +44,7 @@ public class CplBusiness {
 
     // CREATE
     public CplDTO create(BaseCreateRequest request) {
-        log.info("CREA CPL :: " + request.toString());
+        log.info(">>> CPL >>> " + request.toString());
         Cpl map = mapper.map(request, Cpl.class);
         map.setDate(LocalDateTime.now());
         map.setRead(false);
@@ -80,20 +78,26 @@ public class CplBusiness {
     // UPDATE
     public CplDTO update(Long id, Filter filter) {
         Cpl channel = repository.findById(id).orElseThrow(() -> new ElementCleveradException("Cpl", id));
-        CplDTO campaignDTOfrom = CplDTO.from(channel);
-
-        mapper.map(filter, campaignDTOfrom);
-
-        Cpl mappedEntity = mapper.map(channel, Cpl.class);
-        mapper.map(campaignDTOfrom, mappedEntity);
-
-        return CplDTO.from(repository.save(mappedEntity));
+        mapper.map(filter, channel);
+        return CplDTO.from(repository.save(channel));
     }
 
     public void setRead(long id) {
         Cpl media = repository.findById(id).get();
         media.setRead(true);
         repository.save(media);
+    }
+
+    public Page<CplDTO> getToTest2HourBefore() {
+        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.by(Sort.Order.desc("id")));
+        Filter request = new Filter();
+        LocalDateTime oraSpaccata = LocalDateTime.now();
+        //.withMinute(0).withSecond(0).withNano(0);
+        request.setDatetimeFrom(oraSpaccata.minusHours(2));
+        request.setDatetimeTo(oraSpaccata);
+        Page<Cpl> page = repository.findAll(getSpecification(request), pageable);
+        log.trace(" >>> TEST CPL 3 HOUR BEFORE :: {}", page.getTotalElements());
+        return page.map(CplDTO::from);
     }
 
     /**
@@ -123,6 +127,12 @@ public class CplBusiness {
                 predicates.add(cb.lessThanOrEqualTo(root.get("date"), request.getDateTo().plus(1, ChronoUnit.DAYS).atStartOfDay()));
             }
 
+            if (request.getDatetimeFrom() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("date"), request.getDatetimeFrom()));
+            }
+            if (request.getDatetimeTo() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("date"), request.getDatetimeTo()));
+            }
             completePredicate = cb.and(predicates.toArray(new Predicate[0]));
             return completePredicate;
         };
@@ -141,6 +151,8 @@ public class CplBusiness {
         private String ip;
         private String agent;
         private String data;
+        private String info;
+
     }
 
     @Data
@@ -158,6 +170,8 @@ public class CplBusiness {
         private LocalDate dateFrom;
         @DateTimeFormat(pattern = "yyyy-MM-dd")
         private LocalDate dateTo;
+        private LocalDateTime datetimeFrom;
+        private LocalDateTime datetimeTo;
     }
 
 }

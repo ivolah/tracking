@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Slf4j
@@ -78,14 +79,8 @@ public class CpsBusiness {
     // UPDATE
     public CpsDTO update(Long id, Filter filter) {
         Cps channel = repository.findById(id).orElseThrow(() -> new ElementCleveradException("Cps", id));
-        CpsDTO campaignDTOfrom = CpsDTO.from(channel);
-
-        mapper.map(filter, campaignDTOfrom);
-
-        Cps mappedEntity = mapper.map(channel, Cps.class);
-        mapper.map(campaignDTOfrom, mappedEntity);
-
-        return CpsDTO.from(repository.save(mappedEntity));
+        mapper.map(filter, channel);
+        return CpsDTO.from(repository.save(channel));
     }
 
     public void setRead(long id) {
@@ -94,12 +89,16 @@ public class CpsBusiness {
         repository.save(media);
     }
 
+    public Collection<Object> getToTest2HourBefore() {
+        return null;
+    }
+
     /**
      * ============================================================================================================
      **/
     private Specification<Cps> getSpecification(Filter request) {
         return (root, query, cb) -> {
-            Predicate completePredicate ;
+            Predicate completePredicate;
             List<Predicate> predicates = new ArrayList<>();
 
             if (request.getId() != null) {
@@ -121,10 +120,17 @@ public class CpsBusiness {
                 predicates.add(cb.lessThanOrEqualTo(root.get("date"), request.getDateTo().plus(1, ChronoUnit.DAYS).atStartOfDay()));
             }
 
+            if (request.getDatetimeFrom() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("date"), request.getDatetimeFrom()));
+            }
+            if (request.getDatetimeTo() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("date"), request.getDatetimeTo()));
+            }
             completePredicate = cb.and(predicates.toArray(new Predicate[0]));
             return completePredicate;
         };
     }
+
 
     /**
      * ============================================================================================================
@@ -155,6 +161,8 @@ public class CpsBusiness {
         private LocalDate dateFrom;
         @DateTimeFormat(pattern = "yyyy-MM-dd")
         private LocalDate dateTo;
+        private LocalDateTime datetimeFrom;
+        private LocalDateTime datetimeTo;
     }
 
 }

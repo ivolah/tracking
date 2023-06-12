@@ -9,27 +9,27 @@ import java.util.Base64;
 
 @Service
 @Slf4j
-public class RefferalService {
+public class ReferralService {
 
-    public Refferal decodificaRefferal(String refferalString) {
+    public Referral decodificaRefferal(String refferalString) {
         String[] tokens = refferalString.split("-");
-        Refferal refferal = new Refferal();
+        Referral referral = new Referral();
         if (tokens[0] != null) {
-            refferal.setCampaignId(Long.valueOf(decodifica(tokens[0])));
+            referral.setCampaignId(Long.valueOf(decodifica(tokens[0])));
         }
         if (tokens[1] != null) {
-            refferal.setMediaId(Long.valueOf(decodifica(tokens[1])));
+            referral.setMediaId(Long.valueOf(decodifica(tokens[1])));
         }
         if (tokens[2] != null) {
-            refferal.setAffiliateId(Long.valueOf(decodifica(tokens[2])));
+            referral.setAffiliateId(Long.valueOf(decodifica(tokens[2])));
         }
         if (tokens[3] != null) {
-            refferal.setChannelId(Long.valueOf(decodifica(tokens[3])));
+            referral.setChannelId(Long.valueOf(decodifica(tokens[3])));
         }
         if (tokens[4] != null) {
-            refferal.setTargetId(Long.valueOf(decodifica(tokens[4])));
+            referral.setTargetId(Long.valueOf(decodifica(tokens[4])));
         }
-        return refferal;
+        return referral;
     }
 
     public String decodifica(String refferalString) {

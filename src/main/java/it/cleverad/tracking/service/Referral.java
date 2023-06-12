@@ -7,7 +7,7 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-public class Refferal {
+public class Referral {
     private Long mediaId;
     private Long campaignId;
     private Long affiliateId;

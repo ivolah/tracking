@@ -9,6 +9,7 @@ import it.cleverad.tracking.web.exception.PostgresDeleteCleveradException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,7 @@ public class CpcBusiness {
 
     // CREATE
     public CpcDTO create(BaseCreateRequest request) {
+        log.trace(" :: CPC :: " + request.toString());
         Cpc map = mapper.map(request, Cpc.class);
         map.setDate(LocalDateTime.now());
         map.setRead(false);
@@ -79,14 +81,8 @@ public class CpcBusiness {
     // UPDATE
     public CpcDTO update(Long id, Filter filter) {
         Cpc channel = repository.findById(id).orElseThrow(() -> new ElementCleveradException("Cpc", id));
-        CpcDTO campaignDTOfrom = CpcDTO.from(channel);
-
-        mapper.map(filter, campaignDTOfrom);
-
-        Cpc mappedEntity = mapper.map(channel, Cpc.class);
-        mapper.map(campaignDTOfrom, mappedEntity);
-
-        return CpcDTO.from(repository.save(mappedEntity));
+        mapper.map(filter, channel);
+        return CpcDTO.from(repository.save(channel));
     }
 
     public void setRead(long id) {
@@ -94,6 +90,21 @@ public class CpcBusiness {
         cpc.setRead(true);
         repository.save(cpc);
     }
+
+
+    public Page<CpcDTO> getToTest2HourBefore() {
+        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.by(Sort.Order.desc("refferal")));
+        Filter request = new Filter();
+        //request.setRead(false);
+        LocalDateTime oraSpaccata = LocalDateTime.now();
+        //.withMinute(0).withSecond(0).withNano(0);        request.setDatetimeFrom(oraSpaccata.minusHours(3));
+        request.setDatetimeFrom(oraSpaccata.minusHours(2));
+        request.setDatetimeTo(oraSpaccata);
+        Page<Cpc> page = repository.findAll(getSpecification(request), pageable);
+        log.trace(" >>> TEST CPC 3 HOUR BEFORE :: {}", page.getTotalElements());
+        return page.map(CpcDTO::from);
+    }
+
 
     /**
      * ============================================================================================================
@@ -122,11 +133,17 @@ public class CpcBusiness {
                 predicates.add(cb.lessThanOrEqualTo(root.get("date"), request.getDateTo().plus(1, ChronoUnit.DAYS).atStartOfDay()));
             }
 
+            if (request.getDatetimeFrom() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("date"), request.getDatetimeFrom()));
+            }
+            if (request.getDatetimeTo() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("date"), request.getDatetimeTo()));
+            }
+
             completePredicate = cb.and(predicates.toArray(new Predicate[0]));
             return completePredicate;
         };
     }
-
 
     /**
      * ============================================================================================================
@@ -135,10 +152,13 @@ public class CpcBusiness {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    @ToString
     public static class BaseCreateRequest {
         private String refferal;
         private String ip;
         private String agent;
+        private String htmlRefferral;
+        private String info;
     }
 
     @Data
@@ -154,6 +174,8 @@ public class CpcBusiness {
         private LocalDate dateFrom;
         @DateTimeFormat(pattern = "yyyy-MM-dd")
         private LocalDate dateTo;
+        private LocalDateTime datetimeFrom;
+        private LocalDateTime datetimeTo;
     }
 
 }

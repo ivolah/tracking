@@ -3,15 +3,17 @@ package it.cleverad.tracking.business;
 import com.github.dozermapper.core.Mapper;
 import it.cleverad.tracking.persistence.model.Cpm;
 import it.cleverad.tracking.persistence.repository.CpmRepository;
-import it.cleverad.tracking.service.Refferal;
-import it.cleverad.tracking.service.RefferalService;
+import it.cleverad.tracking.service.Referral;
+import it.cleverad.tracking.service.ReferralService;
 import it.cleverad.tracking.web.dto.CpmDTO;
 import it.cleverad.tracking.web.exception.ElementCleveradException;
 import it.cleverad.tracking.web.exception.PostgresDeleteCleveradException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -42,7 +44,7 @@ public class CpmBusiness {
     private Mapper mapper;
 
     @Autowired
-    private RefferalService refferalService;
+    private ReferralService referralService;
 
     /**
      * ============================================================================================================
@@ -50,13 +52,14 @@ public class CpmBusiness {
 
     // CREATE
     public CpmDTO create(BaseCreateRequest request) {
+        log.trace("CREA CPM :: " + request.toString());
         Cpm map = mapper.map(request, Cpm.class);
         map.setRead(false);
         map.setDate(LocalDateTime.now());
-        if (request.getRefferal() != null) {
-            Refferal refferal = refferalService.decodificaRefferal(request.getRefferal());
-            map.setImageId(refferal.getCampaignId());
-            map.setMediaId(refferal.getMediaId());
+        if (StringUtils.isNotBlank(request.getRefferal()) && !request.getRefferal().equals("{{refferalId}}")) {
+            Referral referral = referralService.decodificaRefferal(request.getRefferal());
+            map.setImageId(referral.getCampaignId());
+            map.setMediaId(referral.getMediaId());
         }
         return CpmDTO.from(repository.save(map));
     }
@@ -87,15 +90,9 @@ public class CpmBusiness {
 
     // UPDATE
     public CpmDTO update(Long id, Filter filter) {
-        Cpm channel = repository.findById(id).orElseThrow(() -> new ElementCleveradException("Cpm", id));
-        CpmDTO campaignDTOfrom = CpmDTO.from(channel);
-
-        mapper.map(filter, campaignDTOfrom);
-
-        Cpm mappedEntity = mapper.map(channel, Cpm.class);
-        mapper.map(campaignDTOfrom, mappedEntity);
-
-        return CpmDTO.from(repository.save(mappedEntity));
+        Cpm cpm = repository.findById(id).orElseThrow(() -> new ElementCleveradException("Cpm", id));
+        mapper.map(filter, cpm);
+        return CpmDTO.from(repository.save(cpm));
     }
 
     public void setRead(long id) {
@@ -104,6 +101,17 @@ public class CpmBusiness {
         repository.save(cpm);
     }
 
+    public  Page<CpmDTO> getToTest2HourBefore() {
+        Filter request = new Filter();
+       // request.setRead(false);
+        LocalDateTime oraSpaccata = LocalDateTime.now();
+        //.withMinute(0).withSecond(0).withNano(0);        request.setDatetimeFrom(oraSpaccata.minusHours(3));
+        request.setDatetimeFrom(oraSpaccata.minusHours(2));
+        request.setDatetimeTo(oraSpaccata);
+        Page<Cpm> page = repository.findAll(getSpecification(request), PageRequest.of(0, Integer.MAX_VALUE, Sort.by(Sort.Order.desc("refferal"))));
+        log.trace(" >>> TEST CPM 3 HOUR BEFORE :: {}", page.getTotalElements());
+        return page.map(CpmDTO::from);
+    }
 
     /**
      * ============================================================================================================
@@ -132,10 +140,17 @@ public class CpmBusiness {
                 predicates.add(cb.lessThanOrEqualTo(root.get("date"), request.getDateTo().plus(1, ChronoUnit.DAYS).atStartOfDay()));
             }
 
+            if (request.getDatetimeFrom() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("date"), request.getDatetimeFrom()));
+            }
+            if (request.getDatetimeTo() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("date"), request.getDatetimeTo()));
+            }
             completePredicate = cb.and(predicates.toArray(new Predicate[0]));
             return completePredicate;
         };
     }
+
 
     /**
      * ============================================================================================================
@@ -144,6 +159,7 @@ public class CpmBusiness {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    @ToString
     public static class BaseCreateRequest {
         private String refferal;
         private String ip;
@@ -171,6 +187,8 @@ public class CpmBusiness {
         private LocalDate dateFrom;
         @DateTimeFormat(pattern = "yyyy-MM-dd")
         private LocalDate dateTo;
+        private LocalDateTime datetimeFrom;
+        private LocalDateTime datetimeTo;
     }
 
 }
