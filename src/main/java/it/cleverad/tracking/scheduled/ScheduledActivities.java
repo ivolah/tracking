@@ -116,7 +116,6 @@ public class ScheduledActivities {
 
     }
 
-
     //@Scheduled(cron = "0 */5 * * * ?")
     @Scheduled(cron = "59 59 */1 * * ?")
     public void gestisciIp2GeoDB() {
@@ -125,18 +124,40 @@ public class ScheduledActivities {
             File database = new File("/opt/ip2geo/GeoLite2-Country.mmdb");
             DatabaseReader reader = new DatabaseReader.Builder(database).build();
 
+            // GESTISCO CPC
             List<CpcDTO> listaCpc = cpcBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
-            List<CpmDTO> listaCpm = cpmBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
+            listaCpc.forEach(dto -> {
+                try {
+                    InetAddress ipAddress = InetAddress.getByName(dto.getIp());
+                    cpcBusiness.updateCountry(dto.getId(), reader.country(ipAddress).getCountry().getIsoCode());
+                } catch (IOException | GeoIp2Exception e) {
+                    log.error("ECCEZIONE ", e);
+                }
+            });
+
+            // GESTISCO CPL
             List<CplDTO> listaCpl = cplBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
+            listaCpl.forEach(dto -> {
+                try {
+                    InetAddress ipAddress = InetAddress.getByName(dto.getIp());
+                    cplBusiness.updateCountry(dto.getId(), reader.country(ipAddress).getCountry().getIsoCode());
+                } catch (IOException | GeoIp2Exception e) {
+                    log.error("ECCEZIONE ", e);
+                }
+            });
+
+            // List<CpmDTO> listaCpm = cpmBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
+
             //  List<CpsDTO> listaCps = cpsBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
 
             // GESTISCO CPM
+/*
             listaCpm.forEach(dto -> {
                 try {
                     InetAddress ipAddress = InetAddress.getByName(dto.getIp());
                     CountryResponse response = reader.country(ipAddress);
                     Country country = response.getCountry();
-                    if (country.getIsoCode() != null && !country.getIsoCode().equals("IT")) {
+                    if (country.getIsoCode() != null && !country.getIsoCode().equals("IT") && !country.getIsoCode().equals("CH") && !country.getIsoCode().equals("CH")) {
                         log.info("Country {} >>> {} :: {}", country.getIsoCode(), country.getName(), country.isInEuropeanUnion());
                         log.info("CPM -- cancello record {} ", dto.getId());
                         cpmBusiness.delete(dto.getId());
@@ -149,46 +170,7 @@ public class ScheduledActivities {
                     throw new RuntimeException(e);
                 }
             });
-
-            // GESTISCO CPC
-            listaCpc.forEach(dto -> {
-                try {
-                    InetAddress ipAddress = InetAddress.getByName(dto.getIp());
-                    CountryResponse response = reader.country(ipAddress);
-                    Country country = response.getCountry();
-                    if (country.getIsoCode() != null && !country.getIsoCode().equals("IT")) {
-                        log.info("Country {} >>> {} :: {} :: {} :: {}", country.getConfidence(), country.getIsoCode(), country.getName(), country.isInEuropeanUnion());
-                        log.info("CPC -- cancello record {} ", dto.getId());
-                        cpcBusiness.delete(dto.getId());
-                    }
-                } catch (UnknownHostException e) {
-                    throw new RuntimeException(e);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                } catch (GeoIp2Exception e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            // GESTISCO CPL
-            listaCpl.forEach(dto -> {
-                try {
-                    InetAddress ipAddress = InetAddress.getByName(dto.getIp());
-                    CountryResponse response = reader.country(ipAddress);
-                    Country country = response.getCountry();
-                    if (country.getIsoCode() != null && !country.getIsoCode().equals("IT")) {
-                        log.info("Country >>> {} :: {} :: {} :: {}", country.getIsoCode(), country.getName(), country.isInEuropeanUnion());
-                        log.info("CPL -- cancello record {} ", dto.getId());
-                        cplBusiness.delete(dto.getId());
-                    }
-                } catch (UnknownHostException e) {
-                    throw new RuntimeException(e);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                } catch (GeoIp2Exception e) {
-                    throw new RuntimeException(e);
-                }
-            });
+*/
 
         } catch (IOException e) {
             throw new RuntimeException(e);

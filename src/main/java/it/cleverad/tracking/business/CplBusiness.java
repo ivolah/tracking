@@ -82,6 +82,14 @@ public class CplBusiness {
         return CplDTO.from(repository.save(channel));
     }
 
+    public CplDTO updateCountry(long id, String isoCode) {
+        Cpl channel = repository.findById(id).orElseThrow(() -> new ElementCleveradException("Cpl", id));
+        Filter filter = new Filter();
+        filter.setCountry(isoCode);
+        mapper.map(filter, channel);
+        return CplDTO.from(repository.save(channel));
+    }
+
     public void setRead(long id) {
         Cpl media = repository.findById(id).get();
         media.setRead(true);
@@ -133,10 +141,17 @@ public class CplBusiness {
             if (request.getDatetimeTo() != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("date"), request.getDatetimeTo()));
             }
+
+            if (request.getCountry() != null) {
+                predicates.add(cb.equal(root.get("country"), request.getCountry()));
+            }
+
             completePredicate = cb.and(predicates.toArray(new Predicate[0]));
             return completePredicate;
         };
     }
+
+
 
     /**
      * ============================================================================================================
@@ -152,7 +167,7 @@ public class CplBusiness {
         private String agent;
         private String data;
         private String info;
-
+        private String country;
     }
 
     @Data
@@ -166,6 +181,7 @@ public class CplBusiness {
         private String agent;
         private String data;
         private Boolean read;
+        private String country;
         @DateTimeFormat(pattern = "yyyy-MM-dd")
         private LocalDate dateFrom;
         @DateTimeFormat(pattern = "yyyy-MM-dd")

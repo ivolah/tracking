@@ -18,20 +18,22 @@ public class CpcDTO {
     private Boolean read;
     private String htmlReferral;
     private String info;
+    private String country;
 
-    public CpcDTO(long id, String refferal, String ip, String agent, LocalDateTime date, Boolean read, String htmlRefferral, String info) {
+    public CpcDTO(long id, String refferal, String ip, String agent, LocalDateTime date, Boolean read, String htmlReferral, String info, String country) {
         this.id = id;
         this.refferal = refferal;
         this.ip = ip;
         this.agent = agent;
         this.date = date;
         this.read = read;
-        this.htmlReferral = htmlRefferral;
+        this.htmlReferral = htmlReferral;
         this.info = info;
+        this.country = country;
     }
 
     public static CpcDTO from(Cpc cpc) {
-        return new CpcDTO(cpc.getId(), cpc.getRefferal(), cpc.getIp(), cpc.getAgent(), cpc.getDate(), cpc.getRead(), cpc.getHtmlReferral(), cpc.getInfo());
+        return new CpcDTO(cpc.getId(), cpc.getRefferal(), cpc.getIp(), cpc.getAgent(), cpc.getDate(), cpc.getRead(), cpc.getHtmlReferral(), cpc.getInfo(), cpc.getCountry());
     }
 
 }

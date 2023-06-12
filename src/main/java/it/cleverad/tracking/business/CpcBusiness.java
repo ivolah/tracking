@@ -85,6 +85,14 @@ public class CpcBusiness {
         return CpcDTO.from(repository.save(channel));
     }
 
+    public CpcDTO updateCountry(long id, String isoCode) {
+        Cpc channel = repository.findById(id).orElseThrow(() -> new ElementCleveradException("Cpc", id));
+        Filter filter = new Filter();
+        filter.setCountry(isoCode);
+        mapper.map(filter, channel);
+        return CpcDTO.from(repository.save(channel));
+    }
+
     public void setRead(long id) {
         Cpc cpc = repository.findById(id).get();
         cpc.setRead(true);
@@ -145,6 +153,7 @@ public class CpcBusiness {
         };
     }
 
+
     /**
      * ============================================================================================================
      **/
@@ -157,8 +166,9 @@ public class CpcBusiness {
         private String refferal;
         private String ip;
         private String agent;
-        private String htmlRefferral;
+        private String htmlReferral;
         private String info;
+        private String country;
     }
 
     @Data
@@ -170,6 +180,7 @@ public class CpcBusiness {
         private String ip;
         private String agent;
         private Boolean read;
+        private String country;
         @DateTimeFormat(pattern = "yyyy-MM-dd")
         private LocalDate dateFrom;
         @DateTimeFormat(pattern = "yyyy-MM-dd")

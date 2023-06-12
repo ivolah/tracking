@@ -28,5 +28,6 @@ public class Cpc {
     @Column(name = "html_referral")
     private String htmlReferral;
     private String info;
+    private String country;
 
 }
