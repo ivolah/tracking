@@ -9,11 +9,13 @@ import it.cleverad.tracking.business.CpcBusiness;
 import it.cleverad.tracking.business.CplBusiness;
 import it.cleverad.tracking.business.CpmBusiness;
 import it.cleverad.tracking.business.CpsBusiness;
+import it.cleverad.tracking.persistence.repository.BlacklistRepository;
 import it.cleverad.tracking.web.dto.CpcDTO;
 import it.cleverad.tracking.web.dto.CplDTO;
 import it.cleverad.tracking.web.dto.CpmDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -38,15 +40,18 @@ public class ScheduledActivities {
     @Autowired
     CpsBusiness cpsBusiness;
 
+    @Autowired
+    BlacklistRepository blacklistRepository;
+
     // @Scheduled(cron = "0 */5 * * * ?")
     public void gestisciIp2GeoWeb() {
 
         //  WebServiceClient client = new WebServiceClient.Builder(10, "LICENSEKEY").build();
         try (WebServiceClient client = new WebServiceClient.Builder(864590, "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").host("geolite.info").build()) {
 
-            List<CpcDTO> listaCpc = cpcBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
+            List<CpcDTO> listaCpc = cpcBusiness.getToTest5MinutesBefore().stream().collect(Collectors.toList());
             List<CpmDTO> listaCpm = cpmBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
-            List<CplDTO> listaCpl = cplBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
+            List<CplDTO> listaCpl = cplBusiness.getToTest5MinutesBefore().stream().collect(Collectors.toList());
             //  List<CpsDTO> listaCps = cpsBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
 
             // GESTISCO CPM
@@ -116,27 +121,30 @@ public class ScheduledActivities {
 
     }
 
-    //@Scheduled(cron = "0 */5 * * * ?")
-    @Scheduled(cron = "59 59 */1 * * ?")
-    public void gestisciIp2GeoDB() {
+    @Async
+    @Scheduled(cron = "2 */2 * * * ?")
+    //@Scheduled(cron = "59 59 */1 * * ?")
+    public void gestisciIp2GeoDBeBlacklist() {
 
         try {
             File database = new File("/opt/ip2geo/GeoLite2-Country.mmdb");
             DatabaseReader reader = new DatabaseReader.Builder(database).build();
 
             // GESTISCO CPC
-            List<CpcDTO> listaCpc = cpcBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
+            List<CpcDTO> listaCpc = cpcBusiness.getToTest5MinutesBefore().stream().collect(Collectors.toList());
             listaCpc.forEach(dto -> {
                 try {
+                    // geoIP
                     InetAddress ipAddress = InetAddress.getByName(dto.getIp());
                     cpcBusiness.updateCountry(dto.getId(), reader.country(ipAddress).getCountry().getIsoCode());
+
                 } catch (IOException | GeoIp2Exception e) {
                     log.error("ECCEZIONE ", e);
                 }
             });
 
             // GESTISCO CPL
-            List<CplDTO> listaCpl = cplBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
+            List<CplDTO> listaCpl = cplBusiness.getToTest5MinutesBefore().stream().collect(Collectors.toList());
             listaCpl.forEach(dto -> {
                 try {
                     InetAddress ipAddress = InetAddress.getByName(dto.getIp());
@@ -147,9 +155,7 @@ public class ScheduledActivities {
             });
 
             // List<CpmDTO> listaCpm = cpmBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
-
             //  List<CpsDTO> listaCps = cpsBusiness.getToTest2HourBefore().stream().collect(Collectors.toList());
-
             // GESTISCO CPM
 /*
             listaCpm.forEach(dto -> {
@@ -176,5 +182,6 @@ public class ScheduledActivities {
             throw new RuntimeException(e);
         }
     }
+
 
 }
