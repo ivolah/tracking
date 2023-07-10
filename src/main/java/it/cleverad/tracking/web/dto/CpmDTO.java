@@ -1,11 +1,13 @@
 package it.cleverad.tracking.web.dto;
 
 import it.cleverad.tracking.persistence.model.Cpm;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+@AllArgsConstructor
 @Data
 @NoArgsConstructor
 public class CpmDTO {
@@ -23,19 +25,16 @@ public class CpmDTO {
     private LocalDateTime date;
     private Boolean read;
 
-    public CpmDTO(long id, Long imageId, Long mediaId, String refferal, String ip, String agent, LocalDateTime date, Boolean read) {
-        this.id = id;
-        this.imageId = imageId;
-        this.mediaId = mediaId;
-        this.refferal = refferal;
-        this.ip = ip;
-        this.agent = agent;
-        this.date = date;
-        this.read = read;
-    }
+    private Long campaignId;
+    private Long affiliateId;
+    private Long channelId;
+    private Long targetId;
+
+    private Boolean blacklisted;
 
     public static CpmDTO from(Cpm cpm) {
-        return new CpmDTO(cpm.getId(), cpm.getImageId(), cpm.getMediaId(), cpm.getRefferal(), cpm.getIp(), cpm.getAgent(), cpm.getDate(), cpm.getRead());
+        return new CpmDTO(cpm.getId(), cpm.getImageId(), cpm.getMediaId(), cpm.getRefferal(), cpm.getIp(), cpm.getAgent(), cpm.getDate(), cpm.getRead()
+               , cpm.getCampaignId(), cpm.getAffiliateId(), cpm.getChannelId(), cpm.getTargetId(), cpm.getBlacklisted());
     }
 
 }

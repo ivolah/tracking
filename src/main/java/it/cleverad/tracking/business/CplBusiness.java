@@ -37,6 +37,8 @@ public class CplBusiness {
     private CplRepository repository;
     @Autowired
     private Mapper mapper;
+    @Autowired
+    BlacklistBusiness blacklistBusiness;
 
     /**
      * ============================================================================================================
@@ -45,10 +47,17 @@ public class CplBusiness {
     // CREATE
     public CplDTO create(BaseCreateRequest request) {
         log.info(">>> CPL >>> " + request.toString());
-        Cpl map = mapper.map(request, Cpl.class);
-        map.setDate(LocalDateTime.now());
-        map.setRead(false);
-        return CplDTO.from(repository.save(map));
+        Cpl cpl = mapper.map(request, Cpl.class);
+        cpl.setDate(LocalDateTime.now());
+        cpl.setRead(false);
+
+        if (blacklistBusiness.findByIp(request.getIp())) {
+            log.warn("BLACKLISTED CPC {}", request.getIp());
+            cpl.setBlacklisted(true);
+        } else
+            cpl.setBlacklisted(false);
+
+        return CplDTO.from(repository.save(cpl));
     }
 
     // GET BY ID
@@ -83,11 +92,9 @@ public class CplBusiness {
     }
 
     public CplDTO updateCountry(long id, String isoCode) {
-        Cpl channel = repository.findById(id).orElseThrow(() -> new ElementCleveradException("Cpl", id));
-        Filter filter = new Filter();
-        filter.setCountry(isoCode);
-        mapper.map(filter, channel);
-        return CplDTO.from(repository.save(channel));
+        Cpl cpl = repository.findById(id).orElseThrow(() -> new ElementCleveradException("Cpl", id));
+        cpl.setCountry(isoCode);
+        return CplDTO.from(repository.save(cpl));
     }
 
     public void setRead(long id) {
@@ -96,17 +103,25 @@ public class CplBusiness {
         repository.save(media);
     }
 
-    public Page<CplDTO> getToTest2HourBefore() {
+    public Page<CplDTO> getToTest5MinutesBefore() {
         Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.by(Sort.Order.desc("id")));
         Filter request = new Filter();
         LocalDateTime oraSpaccata = LocalDateTime.now();
         //.withMinute(0).withSecond(0).withNano(0);
-        request.setDatetimeFrom(oraSpaccata.minusHours(2));
+        //request.setDatetimeFrom(oraSpaccata.minusHours(2));
+        request.setDatetimeFrom(oraSpaccata.minusMinutes(5));
         request.setDatetimeTo(oraSpaccata);
         Page<Cpl> page = repository.findAll(getSpecification(request), pageable);
         log.trace(" >>> TEST CPL 3 HOUR BEFORE :: {}", page.getTotalElements());
         return page.map(CplDTO::from);
     }
+
+    public void setBlacklisted(long id) {
+        Cpl cpl = repository.findById(id).get();
+        cpl.setBlacklisted(true);
+        repository.save(cpl);
+    }
+
 
     /**
      * ============================================================================================================
@@ -150,7 +165,6 @@ public class CplBusiness {
             return completePredicate;
         };
     }
-
 
 
     /**

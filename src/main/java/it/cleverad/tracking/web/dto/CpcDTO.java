@@ -1,6 +1,7 @@
 package it.cleverad.tracking.web.dto;
 
 import it.cleverad.tracking.persistence.model.Cpc;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -8,6 +9,7 @@ import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class CpcDTO {
 
     private long id;
@@ -20,20 +22,26 @@ public class CpcDTO {
     private String info;
     private String country;
 
-    public CpcDTO(long id, String refferal, String ip, String agent, LocalDateTime date, Boolean read, String htmlReferral, String info, String country) {
-        this.id = id;
-        this.refferal = refferal;
-        this.ip = ip;
-        this.agent = agent;
-        this.date = date;
-        this.read = read;
-        this.htmlReferral = htmlReferral;
-        this.info = info;
-        this.country = country;
-    }
+    //dati refferal
+    private Long mediaId;
+    private Long campaignId;
+    private Long affiliateId;
+    private Long channelId;
+    private Long targetId;
+
+    private Boolean blacklisted;
 
     public static CpcDTO from(Cpc cpc) {
-        return new CpcDTO(cpc.getId(), cpc.getRefferal(), cpc.getIp(), cpc.getAgent(), cpc.getDate(), cpc.getRead(), cpc.getHtmlReferral(), cpc.getInfo(), cpc.getCountry());
+        return new CpcDTO(cpc.getId(),
+                cpc.getRefferal(),
+                cpc.getIp(),
+                cpc.getAgent(),
+                cpc.getDate(),
+                cpc.getRead(),
+                cpc.getHtmlReferral(),
+                cpc.getInfo(),
+                cpc.getCountry(),
+                cpc.getMediaId(), cpc.getCampaignId(), cpc.getAffiliateId(), cpc.getChannelId(), cpc.getTargetId(), cpc.getBlacklisted());
     }
 
 }

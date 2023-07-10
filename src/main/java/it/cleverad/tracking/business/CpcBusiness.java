@@ -37,9 +37,10 @@ public class CpcBusiness {
 
     @Autowired
     private CpcRepository repository;
-
     @Autowired
     private Mapper mapper;
+    @Autowired
+    BlacklistBusiness blacklistBusiness;
 
     /**
      * ============================================================================================================
@@ -48,10 +49,17 @@ public class CpcBusiness {
     // CREATE
     public CpcDTO create(BaseCreateRequest request) {
         log.trace(" :: CPC :: " + request.toString());
-        Cpc map = mapper.map(request, Cpc.class);
-        map.setDate(LocalDateTime.now());
-        map.setRead(false);
-        return CpcDTO.from(repository.save(map));
+        Cpc cpc = mapper.map(request, Cpc.class);
+        cpc.setDate(LocalDateTime.now());
+        cpc.setRead(false);
+
+        if (blacklistBusiness.findByIp(request.getIp())) {
+            log.warn("BLACKLISTED CPC {}", request.getIp());
+            cpc.setBlacklisted(true);
+        } else
+            cpc.setBlacklisted(false);
+
+        return CpcDTO.from(repository.save(cpc));
     }
 
     // GET BY ID
@@ -85,12 +93,10 @@ public class CpcBusiness {
         return CpcDTO.from(repository.save(channel));
     }
 
-    public CpcDTO updateCountry(long id, String isoCode) {
-        Cpc channel = repository.findById(id).orElseThrow(() -> new ElementCleveradException("Cpc", id));
-        Filter filter = new Filter();
-        filter.setCountry(isoCode);
-        mapper.map(filter, channel);
-        return CpcDTO.from(repository.save(channel));
+    public void updateCountry(long id, String isoCode) {
+        Cpc coc = repository.findById(id).get();
+        coc.setCountry(isoCode);
+        repository.save(coc);
     }
 
     public void setRead(long id) {
@@ -99,14 +105,21 @@ public class CpcBusiness {
         repository.save(cpc);
     }
 
+    public void setBlacklisted(long id) {
+        Cpc cpc = repository.findById(id).get();
+        cpc.setBlacklisted(true);
+        repository.save(cpc);
+    }
 
-    public Page<CpcDTO> getToTest2HourBefore() {
+
+    public Page<CpcDTO> getToTest5MinutesBefore() {
         Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.by(Sort.Order.desc("refferal")));
         Filter request = new Filter();
         //request.setRead(false);
         LocalDateTime oraSpaccata = LocalDateTime.now();
         //.withMinute(0).withSecond(0).withNano(0);        request.setDatetimeFrom(oraSpaccata.minusHours(3));
-        request.setDatetimeFrom(oraSpaccata.minusHours(2));
+        //  request.setDatetimeFrom(oraSpaccata.minusHours(2));
+        request.setDatetimeFrom(oraSpaccata.minusMinutes(5));
         request.setDatetimeTo(oraSpaccata);
         Page<Cpc> page = repository.findAll(getSpecification(request), pageable);
         log.trace(" >>> TEST CPC 3 HOUR BEFORE :: {}", page.getTotalElements());
